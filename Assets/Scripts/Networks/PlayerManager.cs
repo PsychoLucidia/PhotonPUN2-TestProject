@@ -1,14 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using Photon.Pun;
+using Photon.Realtime;
 using UnityEngine;
 
-public class PlayerManager : MonoBehaviour
+public class PlayerManager : MonoBehaviourPunCallbacks
 {
     [Header("Instantiate Positions")]
     public Transform pOnePosition;
     public Transform pTwoPosition; 
     public GameObject playerPrefab;
+
+    [Header("Buttons")]
+    public GameObject startButton;
 
     // Start is called before the first frame update
     void Start()
@@ -28,9 +32,29 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
-    void Update()
+    public override void OnPlayerEnteredRoom(Player newPlayer)
     {
-        
+        base.OnPlayerEnteredRoom(newPlayer);
+
+        CheckAbleToStart();
+    }
+
+    public override void OnPlayerLeftRoom(Player otherPlayer)
+    {
+        base.OnPlayerLeftRoom(otherPlayer);
+
+        CheckAbleToStart();
+    }
+
+    void CheckAbleToStart()
+    {
+        if (PhotonNetwork.PlayerList.Length == 2)
+        {
+            startButton.SetActive(true);
+        }
+        else if (PhotonNetwork.PlayerList.Length <= 1)
+        {
+            startButton.SetActive(false);
+        }
     }
 }

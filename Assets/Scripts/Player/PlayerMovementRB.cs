@@ -12,14 +12,22 @@ public class PlayerMovementRB : MonoBehaviourPunCallbacks
     public Rigidbody rb;
 
     [Header("Player Settings")]
-    public int speed = 10;
+    public float speed = 10;
+    public float jumpForce = 10f;
+
+    public float jumpCooldown = 1.5f;
 
     [Header("Player Settings (Private)")]
     [SerializeField] float _pressNHoldThreshold = 0.6f;
 
+    public bool isGrounded = false;
+
+    public LayerMask groundLayer;
+
     // Non-Serialized Variables
     float _horizontalInput;
     float _verticalInput;
+    float _currentJumpCooldown;
 
     #endregion
 
@@ -44,12 +52,22 @@ public class PlayerMovementRB : MonoBehaviourPunCallbacks
     {
         if (GameManager.Instance.isMultiplayer) { DetectInputMultiplayer(); }
         else if (!GameManager.Instance.isMultiplayer) { DetectInput(); }
+
+        JumpCooldownCountdown();
     }
 
     void FixedUpdate()
     {
         MoveLogic();
         LimitSpeed();
+    }
+
+    void JumpCooldownCountdown()
+    {
+        if (_currentJumpCooldown > 0)
+        {
+            _currentJumpCooldown -= Time.deltaTime;
+        }
     }
 
     void MoveLogic()
@@ -63,6 +81,12 @@ public class PlayerMovementRB : MonoBehaviourPunCallbacks
     {
         _horizontalInput = Input.GetAxisRaw("Horizontal");
         _verticalInput = Input.GetAxisRaw("Vertical");
+
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded && _currentJumpCooldown <= 0)
+        {
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            _currentJumpCooldown = jumpCooldown;
+        }
     }
 
     void DetectInputMultiplayer()
@@ -71,6 +95,11 @@ public class PlayerMovementRB : MonoBehaviourPunCallbacks
         {
             _horizontalInput = Input.GetAxisRaw("Horizontal");
             _verticalInput = Input.GetAxisRaw("Vertical");
+
+            if (Input.GetKeyDown(KeyCode.Space) && isGrounded && _currentJumpCooldown <= 0)
+            {
+                rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            }
         }
     }
 
@@ -82,6 +111,22 @@ public class PlayerMovementRB : MonoBehaviourPunCallbacks
         {
             Vector3 limitedVelocity = velocity.normalized * speed;
             rb.velocity = new Vector3(limitedVelocity.x, rb.velocity.y, limitedVelocity.z);
+        }
+    }
+
+    void OnCollisionStay(Collision actor)
+    {
+        if ((groundLayer.value & (1 << actor.gameObject.layer)) > 0)
+        {
+            isGrounded = true;
+        }
+    }
+
+    void OnCollisionExit(Collision actor)
+    {
+        if ((groundLayer.value & (1 << actor.gameObject.layer)) > 0)
+        {
+            isGrounded = false;
         }
     }
 }

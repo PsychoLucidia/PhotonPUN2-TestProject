@@ -11,6 +11,8 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     public static NetworkManager Instance;
 
     public TextMeshProUGUI connectionStatusText;
+    public TMP_InputField usernameInputField;
+
     public float maxTimeout = 10f;
     public float timeoutTimer = 0;
 
@@ -31,15 +33,39 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         {
             Destroy(gameObject);
         }
+
+        Initialization();
     }
 
-    // Start is called before the first frame update
-    void Start()
+    void Initialization()
     {
         Transform rootObj = UIManager.Instance.popUpPanel.transform;
         Transform image = rootObj.transform.Find("Image");
         connectionStatusText = image.transform.Find("TextStatus").GetComponent<TextMeshProUGUI>();
 
+        Transform menuRoot = null;
+        foreach (GameObject gameObject in UIManager.Instance.uiElements)
+        {
+            if (gameObject.name == "MainMenu")
+            {
+                menuRoot = gameObject.transform;
+            }
+        }
+
+        if (menuRoot != null)
+        {
+            usernameInputField = menuRoot.transform.Find("Username").GetComponent<TMP_InputField>();
+        }
+        else
+        {
+            Debug.Log("Main Menu GameObject not found");
+        }
+
+    }
+
+    // Start is called before the first frame update
+    void Start()
+    {
         if (SceneManager.GetActiveScene().buildIndex == 1)
         {
             GetPhotonViews();
@@ -55,7 +81,7 @@ public class NetworkManager : MonoBehaviourPunCallbacks
 
         for (int i = 0; i < players.Length; i++)
         {
-            if (_pViewArray[i] != null)
+            if (_pViewArray[i] == null)
             {
                 _pViewArray[i] = players[i].GetComponent<PhotonView>();
             }
@@ -106,10 +132,10 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     /// </summary>
     public override void OnConnectedToMaster()
     {
-        // Join the lobby
+        Debug.Log("Connected to master");
+
         PhotonNetwork.JoinLobby();
 
-        // Call the base implementation of the method
         base.OnConnectedToMaster();
     }
 
@@ -119,10 +145,8 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     /// </summary>
     public override void OnJoinedLobby()
     {
-        // Log a message indicating that the client has joined the lobby
-        Debug.Log("Joined the lobby");
+        Debug.Log("Joined the lobby: " + PhotonNetwork.CurrentLobby.Name);
 
-        // Call the base implementation of the method
         base.OnJoinedLobby();
     }
 
@@ -132,10 +156,8 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     /// </summary>
     public override void OnJoinedRoom()
     {
-        // Log a message indicating that the client has joined the room
         Debug.Log("Joined the room");
 
-        // Call the base implementation of the method
         base.OnJoinedRoom();
 
         GameSceneManager.Instance.ChangeSceneMultiplayer(1);
@@ -147,10 +169,8 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     /// </summary>
     public override void OnCreatedRoom()
     {
-        // Log a message indicating that the client has created the room
         Debug.Log("Created the room");
 
-        // Call the base implementation of the method
         base.OnCreatedRoom();
     }
 
@@ -161,10 +181,8 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     /// <param name="message">The error message from the server.</param>
     public override void OnJoinRoomFailed(short returnCode, string message)
     {
-        // Log a message indicating that the client failed to join the room
         Debug.Log("Join room failed. Return code: " + returnCode + ". Message: " + message);
 
-        // Call the base implementation of the method
         base.OnJoinRoomFailed(returnCode, message);
     }
 
@@ -173,6 +191,11 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         base.OnLeftRoom();
     }
 
+    /// <summary>
+    /// This method is called when the client gets disconnected from the Photon server.
+    /// It logs a message indicating that the client has disconnected from the server and the cause of the disconnection.
+    /// </summary>
+    /// <param name="cause">The cause of the disconnection.</param>
     public override void OnDisconnected(DisconnectCause cause)
     {
         base.OnDisconnected(cause);
@@ -185,8 +208,33 @@ public class NetworkManager : MonoBehaviourPunCallbacks
 
     #region Coroutines
 
+    /// <summary>
+    /// Coroutine to connect to the Photon server and update the UI elements accordingly.
+    /// It initiates a connection request, updates the connection status text and UI
+    /// while waiting for the connection to complete. Once connected, it updates the
+    /// connection status text and transitions to the room selection screen.
+    /// </summary>
     IEnumerator ConnectToServerCoroutine()
     {
+        /*
+        if (usernameInputField.text == "")
+        {
+            if (RoomManager.Instance.previousUsername != "")
+            {
+                PhotonNetwork.LocalPlayer.NickName = RoomManager.Instance.previousUsername;
+            }
+            else
+            {
+                connectToServerCor = null;
+                yield break;
+            }
+        }
+        else
+        {
+            RoomManager.Instance.previousUsername = usernameInputField.text;
+            PhotonNetwork.LocalPlayer.NickName = usernameInputField.text;
+        }
+        */
 
         // Connect to the server
         PhotonNetwork.ConnectUsingSettings();
@@ -225,8 +273,8 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         else
         {
             connectionStatusText.text = "Connected to server";
-            Debug.Log("Connected to server. Actor ID: " + PhotonNetwork.LocalPlayer.ActorNumber);
-
+            Debug.Log($"Connected to server. Actor ID: {PhotonNetwork.LocalPlayer.ActorNumber}. Name: {PhotonNetwork.LocalPlayer.NickName}");
+            
             yield return new WaitForSeconds(1f);
             UIManager.Instance.popUpPanel.SetActive(false);
             UIManager.Instance.uiElements[0].SetActive(false);
@@ -236,6 +284,12 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         connectToServerCor = null;
     }
 
+    /// <summary>
+    /// Coroutine to disconnect from the server and update UI elements accordingly.
+    /// It initiates a disconnect request, updates the connection status text and UI
+    /// while waiting for the disconnection to complete. Once disconnected, it resets
+    /// the UI to its initial state.
+    /// </summary>
     IEnumerator DisconnectFromServerCoroutine()
     {
         PhotonNetwork.Disconnect();

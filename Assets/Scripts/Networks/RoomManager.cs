@@ -3,10 +3,17 @@ using System.Collections.Generic;
 using Photon.Pun;
 using Photon.Realtime;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class RoomManager : MonoBehaviourPunCallbacks
 {
+    public static RoomManager Instance;
+
+    public string previousUsername;
+
     public TMP_InputField roomNameInputField;
 
     public TextMeshProUGUI connectionStatusText;
@@ -15,36 +22,129 @@ public class RoomManager : MonoBehaviourPunCallbacks
 
     public List<RoomInfo> rooms = new List<RoomInfo>();
 
+    void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(this.gameObject);
+        }
+        else
+        {
+            Destroy(this.gameObject);
+        }
+    }
+
     void Start()
+    {
+        Initialization(SceneManager.GetSceneByBuildIndex(0), SceneManager.GetActiveScene());
+    }
+
+    public override void OnEnable()
+    {
+        SceneManager.activeSceneChanged += Initialization;
+    }
+
+    public override void OnDisable()
+    {
+        SceneManager.activeSceneChanged -= Initialization;
+    }
+
+    void Initialization(Scene previous, Scene current)
     {
         Transform rootObj = UIManager.Instance.popUpPanel.transform;
         Transform image = rootObj.transform.Find("Image");
         connectionStatusText = image.transform.Find("TextStatus").GetComponent<TextMeshProUGUI>();
+
+        if (current.buildIndex == 0)
+        {
+            GetRoomNameInputField();
+        }
+    }
+
+    public void GetRoomNameInputField()
+    {
+        if (roomNameInputField == null)
+        {
+            Transform roomRoot = null;
+
+            foreach (GameObject objs in UIManager.Instance.uiElements)
+            {
+                if (objs.name == "RoomSelect")
+                {
+                    roomRoot = objs.transform;
+                }
+                else
+                {
+                    continue;
+                }
+            }
+
+            if (roomRoot != null)
+            {
+                roomNameInputField = roomRoot.transform.Find("InputField").GetComponent<TMP_InputField>();
+
+                Button createRoomButton = roomRoot.transform.Find("CreateRoomBtn").GetComponent<Button>();
+                createRoomButton.onClick.AddListener(CreateRoom);
+
+                Button joinRoomButton = roomRoot.transform.Find("JoinRoomBtn").GetComponent<Button>();
+                joinRoomButton.onClick.AddListener(JoinRoom);
+            }
+            else
+            {
+                Debug.LogWarning("RoomSelect GameObject not found.");
+                return;
+            }
+        }
     }
 
     public override void OnRoomListUpdate(List<RoomInfo> roomList)
     {
         base.OnRoomListUpdate(roomList);
-
+        
         rooms.Clear();
-        foreach (RoomInfo room in roomList)
-        {
-            rooms.Add(room);
-        }
+        rooms.AddRange(roomList);
 
         Debug.Log("Room List Updated. Room Count: " + rooms.Count);
     }
 
     #region Button Actions
+
+    /// <summary>
+    /// Create a room with the name given in the roomNameInputField.
+    /// </summary>
+    /// <remarks>
+    /// If the roomNameInputField is null, it will search for a GameObject with the name "RoomSelect" in the UIManager's uiElements list,
+    /// and then get the TMP_InputField component from the "InputField" child of the "RoomSelect" GameObject.
+    /// After that, it will start a coroutine to check if the room already exists.
+    /// If roomNameInputField is null, returns.
+    /// </remarks>
     public void CreateRoom()
     {
-        StartCoroutine(CreateCheckRoom());
+        if (roomNameInputField != null)
+        {
+            StartCoroutine(CreateCheckRoom());
+        }
+        else
+        {
+            Debug.LogWarning("RoomNameInputField is null.");
+            return;
+        }
     }
 
     public void JoinRoom()
     {
-        StartCoroutine(JoinCheckRoom());
+        if (roomNameInputField != null)
+        {
+            StartCoroutine(JoinCheckRoom());
+        }
+        else
+        {
+            Debug.LogWarning("RoomNameInputField is null.");
+            return;
+        }
     }
+
     #endregion
 
     #region Coroutines
@@ -94,8 +194,12 @@ public class RoomManager : MonoBehaviourPunCallbacks
                         isCreatingRoom = true;
 
                         yield return new WaitForSecondsRealtime(0.5f);
-                        PhotonNetwork.CreateRoom(roomNameInputField.text);
-                        GameManager.Instance.isMultiplayer = true;
+
+                        if (PhotonNetwork.IsConnectedAndReady)
+                        {
+                            PhotonNetwork.CreateRoom(roomNameInputField.text);
+                            GameManager.Instance.isMultiplayer = true;
+                        }
                     }
                 }
             }
@@ -107,8 +211,12 @@ public class RoomManager : MonoBehaviourPunCallbacks
                 isCreatingRoom = true;
 
                 yield return new WaitForSecondsRealtime(0.5f);
-                PhotonNetwork.CreateRoom(roomNameInputField.text);
-                GameManager.Instance.isMultiplayer = true;
+
+                if (PhotonNetwork.IsConnectedAndReady)
+                {
+                    PhotonNetwork.CreateRoom(roomNameInputField.text);
+                    GameManager.Instance.isMultiplayer = true;
+                }
             }
             yield return null;
         }
