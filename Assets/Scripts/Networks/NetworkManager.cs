@@ -34,7 +34,6 @@ public class NetworkManager : MonoBehaviourPunCallbacks
             Destroy(gameObject);
         }
 
-        Initialization();
     }
 
     void Initialization()
@@ -66,11 +65,14 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     // Start is called before the first frame update
     void Start()
     {
-        if (SceneManager.GetActiveScene().buildIndex == 1)
+        if (SceneManager.GetActiveScene().buildIndex == 1 || SceneManager.GetActiveScene().buildIndex == 2)
         {
             GetPhotonViews();
             _connectionCoroutine = StartCoroutine(CheckConnection());
         }
+
+        Initialization();
+        PhotonNetwork.AutomaticallySyncScene = true;
     }
 
     void GetPhotonViews()
@@ -316,8 +318,11 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     {
         if (PhotonNetwork.CurrentRoom.PlayerCount <= 1)
         {
-            PhotonNetwork.CurrentRoom.IsOpen = false;
-            PhotonNetwork.CurrentRoom.IsVisible = false;
+            if (PhotonNetwork.IsMasterClient)
+            {
+                PhotonNetwork.CurrentRoom.IsOpen = false;
+                PhotonNetwork.CurrentRoom.IsVisible = false;
+            }
             Debug.Log("Left room. IsOpen: " + PhotonNetwork.CurrentRoom.IsOpen + ". IsVisible: " + PhotonNetwork.CurrentRoom.IsVisible);
         }
 
@@ -352,9 +357,12 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     {
         if (PhotonNetwork.CurrentRoom.PlayerCount <= 1)
         {
-            PhotonNetwork.CurrentRoom.IsOpen = false;
-            PhotonNetwork.CurrentRoom.IsVisible = false;
-            Debug.Log("Left room. IsOpen: " + PhotonNetwork.CurrentRoom.IsOpen + ". IsVisible: " + PhotonNetwork.CurrentRoom.IsVisible);
+            if (PhotonNetwork.IsMasterClient)
+            {
+                PhotonNetwork.CurrentRoom.IsOpen = false;
+                PhotonNetwork.CurrentRoom.IsVisible = false;
+                Debug.Log("Left room. IsOpen: " + PhotonNetwork.CurrentRoom.IsOpen + ". IsVisible: " + PhotonNetwork.CurrentRoom.IsVisible);
+            }
         }
 
         PhotonNetwork.Disconnect();

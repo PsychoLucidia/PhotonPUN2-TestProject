@@ -5,5 +5,11 @@ using UnityEngine;
 
 public class InGameCanvasManager : MonoBehaviourPunCallbacks
 {
-    
+    public GameObject uiWin;
+
+    [PunRPC]
+    public void SetActiveWin()
+    {
+        uiWin.SetActive(true);
+    }
 }

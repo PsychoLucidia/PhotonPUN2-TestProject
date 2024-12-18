@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7538107991385509048}
   - component: {fileID: 1699901401142199079}
+  - component: {fileID: 1267341664870932200}
   m_Layer: 0
   m_Name: PlayerManager
   m_TagString: Untagged
@@ -48,3 +49,26 @@ MonoBehaviour:
   pTwoPosition: {fileID: 0}
   playerPrefab: {fileID: 4665051025679637647, guid: ea412f507b63ea340b144071bfd26a0b, type: 3}
   startButton: {fileID: 0}
+  playerList: []
+--- !u!114 &1267341664870932200
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5037396125013438451}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa584fbee541324448dd18d8409c7a41, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ObservedComponentsFoldoutOpen: 1
+  Group: 0
+  prefixField: -1
+  Synchronization: 3
+  OwnershipTransfer: 0
+  observableSearch: 2
+  ObservedComponents: []
+  sceneViewId: 0
+  InstantiationId: 0
+  isRuntimeInstantiated: 0
