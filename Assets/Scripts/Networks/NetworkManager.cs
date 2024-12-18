@@ -216,7 +216,6 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     /// </summary>
     IEnumerator ConnectToServerCoroutine()
     {
-        /*
         if (usernameInputField.text == "")
         {
             if (RoomManager.Instance.previousUsername != "")
@@ -234,7 +233,6 @@ public class NetworkManager : MonoBehaviourPunCallbacks
             RoomManager.Instance.previousUsername = usernameInputField.text;
             PhotonNetwork.LocalPlayer.NickName = usernameInputField.text;
         }
-        */
 
         // Connect to the server
         PhotonNetwork.ConnectUsingSettings();

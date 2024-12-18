@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerManager : MonoBehaviourPunCallbacks
 {
@@ -13,6 +14,10 @@ public class PlayerManager : MonoBehaviourPunCallbacks
 
     [Header("Buttons")]
     public GameObject startButton;
+
+    [Header("Lists")]
+    private List<PhotonView> _playerList = new List<PhotonView>();
+    public List<PhotonView> playerList = new List<PhotonView>();
 
     // Start is called before the first frame update
     void Start()
@@ -29,6 +34,12 @@ public class PlayerManager : MonoBehaviourPunCallbacks
             {
                 PhotonNetwork.Instantiate("Prefabs/" + playerPrefab.name, pTwoPosition.position, pTwoPosition.rotation, 0);
             }
+
+            if (SceneManager.GetActiveScene().buildIndex == 1)
+            {
+                PhotonNetwork.AutomaticallySyncScene = false;
+                CheckAbleToStart();
+            }
         }
     }
 
@@ -36,25 +47,69 @@ public class PlayerManager : MonoBehaviourPunCallbacks
     {
         base.OnPlayerEnteredRoom(newPlayer);
 
-        CheckAbleToStart();
+        if (SceneManager.GetActiveScene().buildIndex == 1)
+        {
+            CheckAbleToStart();
+        }
     }
 
     public override void OnPlayerLeftRoom(Player otherPlayer)
     {
         base.OnPlayerLeftRoom(otherPlayer);
 
-        CheckAbleToStart();
+        if (SceneManager.GetActiveScene().buildIndex == 1)
+        {
+            CheckAbleToStart();
+        }
     }
+
+    #region Lobby Methods
 
     void CheckAbleToStart()
     {
-        if (PhotonNetwork.PlayerList.Length == 2)
+        if (PhotonNetwork.IsMasterClient)
         {
-            startButton.SetActive(true);
-        }
-        else if (PhotonNetwork.PlayerList.Length <= 1)
-        {
-            startButton.SetActive(false);
+            if (PhotonNetwork.PlayerList.Length == 2)
+            {
+                startButton.SetActive(true);
+            }
+            else if (PhotonNetwork.PlayerList.Length <= 1)
+            {
+                startButton.SetActive(false);
+            }
         }
     }
+
+    public void StartGame()
+    {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            PhotonNetwork.AutomaticallySyncScene = true;
+            GameSceneManager.Instance.ChangeSceneMultiplayer(2);
+        }
+    }
+
+    #endregion
+
+    #region In-game Methods
+
+    public void UpdatePlayerList()
+    {
+        if (_playerList == playerList) { return; }
+
+        photonView.RPC("PlayerListHandler", RpcTarget.All);
+    }
+
+    [PunRPC]
+    public void PlayerListHandler()
+    {
+        _playerList = playerList;
+
+        if (playerList.Count == 1)
+        {
+            
+        }
+    }
+
+    #endregion
 }

@@ -27,7 +27,6 @@ public class RoomManager : MonoBehaviourPunCallbacks
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(this.gameObject);
         }
         else
         {
@@ -42,11 +41,13 @@ public class RoomManager : MonoBehaviourPunCallbacks
 
     public override void OnEnable()
     {
+        base.OnEnable();
         SceneManager.activeSceneChanged += Initialization;
     }
 
     public override void OnDisable()
     {
+        base.OnDisable();
         SceneManager.activeSceneChanged -= Initialization;
     }
 
@@ -99,13 +100,11 @@ public class RoomManager : MonoBehaviourPunCallbacks
     }
 
     public override void OnRoomListUpdate(List<RoomInfo> roomList)
-    {
-        base.OnRoomListUpdate(roomList);
-        
+    {        
         rooms.Clear();
         rooms.AddRange(roomList);
 
-        Debug.Log("Room List Updated. Room Count: " + rooms.Count);
+        Debug.LogWarning("Room List Updated. Room Count: " + rooms.Count);
     }
 
     #region Button Actions
@@ -197,7 +196,7 @@ public class RoomManager : MonoBehaviourPunCallbacks
 
                         if (PhotonNetwork.IsConnectedAndReady)
                         {
-                            PhotonNetwork.CreateRoom(roomNameInputField.text);
+                            PhotonNetwork.CreateRoom(roomNameInputField.text, new RoomOptions() { IsOpen = true, IsVisible = true });
                             GameManager.Instance.isMultiplayer = true;
                         }
                     }
@@ -214,7 +213,7 @@ public class RoomManager : MonoBehaviourPunCallbacks
 
                 if (PhotonNetwork.IsConnectedAndReady)
                 {
-                    PhotonNetwork.CreateRoom(roomNameInputField.text);
+                    PhotonNetwork.CreateRoom(roomNameInputField.text, new RoomOptions() { IsOpen = true, IsVisible = true });
                     GameManager.Instance.isMultiplayer = true;
                 }
             }
@@ -264,8 +263,12 @@ public class RoomManager : MonoBehaviourPunCallbacks
                         isCreatingRoom = true;
 
                         yield return new WaitForSecondsRealtime(0.5f);
-                        PhotonNetwork.JoinRoom(roomNameInputField.text);
-                        GameManager.Instance.isMultiplayer = true;
+
+                        if (PhotonNetwork.IsConnectedAndReady)
+                        {
+                            PhotonNetwork.JoinRoom(roomNameInputField.text);
+                            GameManager.Instance.isMultiplayer = true;
+                        }
                     }
                     else
                     {
